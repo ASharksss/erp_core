@@ -1,4 +1,4 @@
-const {Product, Category_product, Batch} = require("../models/models");
+const {Product, Category_product, Batch, Product_components, Components, Batch_components} = require("../models/models");
 
 class ProductController {
   async getProducts(req, res) {
@@ -15,14 +15,23 @@ class ProductController {
     }
   }
 
-
-
   async createBatch(req, res) {
     try {
-      const {vendor_code, count} = req.body
-      const batch = await Batch.create({vendor_code, count})
+      const {productVendorCode, count} = req.body
+      const batch = await Batch.create({productVendorCode, count})
+      const expenses = await Product_components.findAll({
+        where: {productVendorCode},
+        attributes: ['componentId', 'count'],
+        include: [{model: Components, attributes: ['name']}]
+      })
+      expenses.map(async item => {
+        let batch_expenses = await Batch_components.create({
+          com
+        })
 
-      return res.json(batch)
+
+      })
+      return res.json(expenses)
     } catch (e) {
       return res.json({error: e.message})
     }
