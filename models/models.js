@@ -33,6 +33,11 @@ const Stock = sequelize.define('stock', {
   count: {type: DataTypes.DOUBLE, allowNull: false},
 })
 
+const Stock_components = sequelize.define('stock_components', {
+  id: {type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true},
+  count: {type: DataTypes.DOUBLE, allowNull: false},
+})
+
 const Shipment = sequelize.define('shipment', {
   id: {type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true},
   count: {type: DataTypes.DOUBLE, allowNull: false},
@@ -72,6 +77,12 @@ const Transaction = sequelize.define('Transaction', {
 
 Category_product.hasMany(Product)
 Product.belongsTo(Category_product)
+
+Product.hasMany(Stock)
+Stock.belongsTo(Product)
+
+Components.hasMany(Stock_components)
+Stock_components.belongsTo(Components)
 
 Product.hasMany(Shipment)
 Shipment.belongsTo(Product)

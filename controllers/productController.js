@@ -1,4 +1,11 @@
-const {Product, Category_product, Batch, Product_components, Components, Batch_components} = require("../models/models");
+const {
+  Product,
+  Category_product,
+  Batch,
+  Product_components,
+  Components,
+  Batch_components
+} = require("../models/models");
 
 class ProductController {
   async getProducts(req, res) {
@@ -21,15 +28,14 @@ class ProductController {
       const batch = await Batch.create({productVendorCode, count})
       const expenses = await Product_components.findAll({
         where: {productVendorCode},
-        attributes: ['componentId', 'count'],
-        include: [{model: Components, attributes: ['name']}]
+        attributes: ['componentId', 'count']
       })
       expenses.map(async item => {
-        let batch_expenses = await Batch_components.create({
-          com
+        await Batch_components.create({
+          batchId: batch.id,
+          componentId: item.componentId,
+          count: item.count
         })
-
-
       })
       return res.json(expenses)
     } catch (e) {
