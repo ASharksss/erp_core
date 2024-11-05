@@ -66,6 +66,7 @@ const Batch_components = sequelize.define('batch_components', {
 const Supply = sequelize.define('supply', {
   id: {type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true},
   count: {type: DataTypes.INTEGER, allowNull: false},
+  date: {type: DataTypes.DATE}
 })
 
 const Transaction = sequelize.define('Transaction', {
@@ -135,6 +136,6 @@ module.exports = {
   Order,
   Shipment,
   Stock,
-  Product_components,
+  Product_components,Stock_components,
   Category_components, Components, Category_product, Product
 }
