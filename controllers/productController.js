@@ -4,7 +4,7 @@ const {
   Batch,
   Product_components,
   Components, Transaction,
-  Batch_components, Supply, Stock_components
+  Batch_components, Supply, Stock_components, Stock
 } = require("../models/models");
 
 
@@ -34,37 +34,53 @@ class ProductController {
       //Находим растраты на 1 товар
       const expenses = await Product_components.findAll({
         where: {productVendorCode},
-        attributes: ['componentId', 'count']
+        attributes: ['productVendorCode', 'componentId', 'count']
       })
       //Перебираем
-      expenses.map(async item => {
+      for (let item of expenses) {
+        let requiredCount = item.count * count
+
         //записываем растраты на партию
         await Batch_components.create({
           batchId: batch.id,
           componentId: item.componentId,
-          count: item.count * count
+          count: requiredCount
         })
+
         //находим компоненты на складе
         const component = await Stock_components.findOne({
           where: {componentId: item.componentId}
         })
 
+        if (component.count < requiredCount) {
+          return res.json({ message: `Недостаточно компонента с ID ${item.componentId} на складе.` });
+        }
         if (component) {
           // Вычитаем компоненты
-          component.count -= item.count * count
+          component.count -= requiredCount
           await component.save()
           //Записываем транзакцию
           await Transaction.create({
             type: "Расход",
             componentId: item.componentId,
-            count: item.count * count,
+            count: requiredCount,
             direction: "Расход на товар"
           })
+
         } else {
           return res.json({message: "Не найдены расходные материалы на складе"})
         }
+      }
 
+      const product = await Stock.findOne({
+        where: {productVendorCode}
       })
+      if (product) {
+        product.count += count
+        await product.save()
+      }else {
+        await Stock.create({productVendorCode, count})
+      }
       return res.json(expenses)
     } catch (e) {
       return res.json({error: e.message})
