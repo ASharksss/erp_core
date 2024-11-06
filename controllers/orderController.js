@@ -2,6 +2,7 @@ const path = require("path");
 const reader = require('xlsx')
 const fs = require('fs')
 const xlsx = require("xlsx");
+const {Order, Order_list} = require("../models/models");
 
 class OrderController {
   async checkOrderExcel(req, res) {
@@ -45,14 +46,30 @@ class OrderController {
 
       fs.unlinkSync(filePath)
 
-      return res.json({
-        message: `Данные успешно прочитаны`,
-        data: result
-      })
+      return res.json(result)
     } catch (e) {
       return res.json({message: e.message})
     }
   }
+
+  //Добавить транзакции
+  async createOrder(req, res) {
+    try {
+      const {arr, customer} = req.body
+      let order = await Order.create({customer})
+      for (let item of arr) {
+        await Order_list.create({
+          productVendorCode: item.article,
+          count: item.quantity,
+          orderId: order.id
+        })
+      }
+      return res.json(order)
+    } catch (e) {
+      return res.status(500).json({error: e.message})
+    }
+  }
+
 }
 
 module.exports = new OrderController()
