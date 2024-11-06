@@ -7,6 +7,7 @@ router.post('/createProductCategory', adminController.createProductCategory)
 router.post('/createComponentCategory', adminController.createComponentCategory)
 router.post('/createComponent', adminController.createComponent)
 router.post('/createProductComponent', adminController.createProductComponent)
+router.post('/createStatusOrder', adminController.createStatusOrder)
 router.get('/getProductComponent', adminController.getProductComponent)
 
 

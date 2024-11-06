@@ -4,7 +4,7 @@ const {
   Batch,
   Category_components,
   Components,
-  Product_components
+  Product_components, Status_order
 } = require("../models/models");
 const {canTreatArrayAsAnd} = require("sequelize/lib/utils");
 
@@ -80,6 +80,16 @@ class AdminController {
         ]
       })
       return res.json(array)
+    } catch (e) {
+      return res.status(500).json({error: e.message})
+    }
+  }
+
+  async createStatusOrder (req, res) {
+    try {
+      const {name} = req.body
+      const status = await Status_order.create({name})
+      return res.json(status)
     } catch (e) {
       return res.status(500).json({error: e.message})
     }

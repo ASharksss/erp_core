@@ -53,6 +53,11 @@ const Order_list = sequelize.define('order_list', {
   count: {type: DataTypes.INTEGER, allowNull: false},
 })
 
+const Status_order = sequelize.define('status_order', {
+  id: {type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true},
+  name: {type: DataTypes.STRING}
+})
+
 const Batch = sequelize.define('batch', {
   id: {type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true},
   count: {type: DataTypes.INTEGER, allowNull: false},
@@ -97,6 +102,9 @@ Batch.belongsTo(Product)
 Product.hasMany(Order_list)
 Order_list.belongsTo(Product)
 
+Status_order.hasMany(Order)
+Order.belongsTo(Status_order)
+
 Product.hasMany(Transaction)
 Transaction.belongsTo(Product)
 
@@ -136,6 +144,6 @@ module.exports = {
   Order,
   Shipment,
   Stock,
-  Product_components,Stock_components,
+  Product_components, Stock_components, Status_order,
   Category_components, Components, Category_product, Product
 }

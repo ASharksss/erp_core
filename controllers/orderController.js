@@ -2,7 +2,7 @@ const path = require("path");
 const reader = require('xlsx')
 const fs = require('fs')
 const xlsx = require("xlsx");
-const {Order, Order_list} = require("../models/models");
+const {Order, Order_list, Status_order, Product} = require("../models/models");
 
 class OrderController {
   async checkOrderExcel(req, res) {
@@ -56,17 +56,57 @@ class OrderController {
   async createOrder(req, res) {
     try {
       const {arr, customer} = req.body
-      let order = await Order.create({customer})
+      let order = await Order.create({
+        customer,
+        statusOrderId: "07d2152f-29ff-4e2a-9ae7-02d3e2bd807a"
+      })
       for (let item of arr) {
         await Order_list.create({
           productVendorCode: item.article,
           count: item.quantity,
-          orderId: order.id
+          orderId: order.id,
         })
       }
       return res.json(order)
     } catch (e) {
       return res.status(500).json({error: e.message})
+    }
+  }
+
+  async getOrders(req, res) {
+    try {
+      const order = await Order.findAll({
+        attributes: ['id', 'customer', 'statusOrderId'],
+        include: [{model: Status_order, attributes: ['name']}]
+      })
+      return res.json(order)
+    } catch (e) {
+      return res.status(500).json({error: e.message})
+    }
+  }
+
+  async getOrder(req, res) {
+    try {
+      const {id} = req.params
+      const order = await Order.findOne({
+        where: {id},
+        attributes: ['id', 'customer'],
+        include: [
+          {model: Status_order, attributes: ['id', 'name']},
+          {
+            model: Order_list, attributes: ['id', 'count'],
+            include: [{model: Product, attributes: ['name']}]
+          }
+        ]
+      })
+      if (order.status_order.id === "07d2152f-29ff-4e2a-9ae7-02d3e2bd807a") {
+        order.statusOrderId = "4eeee623-2fc5-487d-bf44-60879eb09163"
+        await order.save()
+      }
+
+      return res.json(order)
+    } catch (e) {
+      return res.json({error: e.message})
     }
   }
 
