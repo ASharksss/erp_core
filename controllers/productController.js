@@ -23,7 +23,6 @@ class ProductController {
     }
   }
 
-
   //Добавить функцию вычитания со склада материалов
   async createBatch(req, res) {
     try {
