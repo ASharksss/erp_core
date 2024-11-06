@@ -2,7 +2,8 @@ const path = require("path");
 const reader = require('xlsx')
 const fs = require('fs')
 const xlsx = require("xlsx");
-const {Order, Order_list, Status_order, Product} = require("../models/models");
+const {Order, Order_list, Status_order, Product, Shipment, Stock, Transaction} = require("../models/models");
+const {where} = require("sequelize");
 
 class OrderController {
   async checkOrderExcel(req, res) {
@@ -107,6 +108,108 @@ class OrderController {
       return res.json(order)
     } catch (e) {
       return res.json({error: e.message})
+    }
+  }
+
+  async prepareOrder(req, res) {
+    try {
+      const {id} = req.params
+      const order = await Order.findOne({
+        where: {id}
+      })
+      if (order) {
+        order.statusOrderId = "0522383f-205e-470e-881f-857eddeef22b"
+        await order.save()
+      }
+      return res.json(order)
+    } catch (e) {
+      return res.json({error: e.message})
+    }
+  }
+
+  async sendOrder(req, res) {
+    try {
+      const {id} = req.params;
+
+      // Находим заказ с его деталями
+      const order = await Order.findOne({
+        where: {id},
+        include: [{model: Order_list}] // Включаем товары в заказ
+      });
+
+      // Если заказ не найден
+      if (!order) {
+        return res.status(404).json({error: "Order not found"});
+      }
+
+      let orderList = order.order_lists.map(item => (
+        {productVendorCode: item.productVendorCode, count: item.count}
+      ));
+
+      let insufficientStockItems = []; // Список товаров, которых не хватает на складе
+
+      // Проверяем все товары в заказе на наличие и количество на складе
+      for (let item of orderList) {
+        // Проверяем наличие товара на складе
+        let count_stock = await Stock.findOne({
+          where: {productVendorCode: item.productVendorCode}
+        });
+
+        // Если товара нет на складе
+        if (!count_stock) {
+          insufficientStockItems.push(item);
+        }
+        // Если товара недостаточно на складе
+        else if (count_stock.count < item.count) {
+          insufficientStockItems.push(item);
+        }
+      }
+
+      // Если хотя бы один товар не может быть отгружен
+      if (insufficientStockItems.length > 0) {
+        return res.status(400).json({
+          error: "Не хватает товаров на складе",
+          insufficientStockItems
+        });
+      }
+
+      // Если все товары прошли проверку, создаем записи в Shipment и обновляем склад
+      for (let item of orderList) {
+        // Создаем запись об отгрузке для каждого товара
+        await Shipment.create({
+          productVendorCode: item.productVendorCode,
+          count: item.count,
+          orderId: order.id
+        });
+
+        // Обновляем количество товара на складе
+        let count_stock = await Stock.findOne({
+          where: {productVendorCode: item.productVendorCode}
+        });
+
+        // Вычитаем количество товара с учета
+        count_stock.count -= item.count;
+        await count_stock.save();
+
+        await Transaction.create({
+          type: "Расход",
+          count: item.count,
+          direction: `Отправка товара клиенту "${order.customer}"`,
+          productVendorCode: item.productVendorCode
+        })
+      }
+
+      // Обновляем статус заказа на "отгружен"
+      order.statusOrderId = "9d8a0b8e-a31d-4f6d-a952-e8c25f881ff1"; // Статус "Отправлен"
+      await order.save();
+
+
+      // Возвращаем успешный ответ с деталями заказа
+      return res.json(orderList);
+
+    } catch (e) {
+
+      return res.status(500).json({error: e.message});
     }
   }
 
